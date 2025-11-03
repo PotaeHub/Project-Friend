@@ -1,0 +1,41 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String
+  menus Menu[]
+}
+
+model Menu {
+  id         Int         @id @default(autoincrement())
+  name       String
+  price      Float
+  image      String?
+  category   Category    @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  OrderItem  OrderItem[]
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  tableNumber Int
+  status      String      @default("in_kitchen")
+  createdAt   DateTime    @default(now())
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id       Int   @id @default(autoincrement())
+  order    Order @relation(fields: [orderId], references: [id])
+  orderId  Int
+  menu     Menu  @relation(fields: [menuId], references: [id])
+  menuId   Int
+  quantity Int
+}

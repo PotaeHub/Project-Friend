@@ -1,0 +1,10 @@
+import express from "express";
+import { getOrders, createOrder, updateOrderStatus, getOrderHistory, getOrdersTable, getTable_All } from "../controllers/orderController.js";
+const router = express.Router();
+router.get("/orders", getOrders);
+router.get("/table/:tableNumber", getOrdersTable);
+router.get("/table", getTable_All);
+router.post("/orders", createOrder);
+router.put("/orders/:id/status", updateOrderStatus);
+router.get("/orders/history", getOrderHistory);
+export default router;
