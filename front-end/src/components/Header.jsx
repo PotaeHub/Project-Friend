@@ -4,27 +4,28 @@ export default function Header({ cartCount, tableNumber, onOpenCart }) {
     const navigate = useNavigate();
 
     return (
-        <div className="flex flex-col sm:flex-row justify-between items-center p-4 sm:p-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg">
-            <h1 
-                className="text-xl sm:text-2xl font-bold cursor-pointer hover:scale-105 transition-transform duration-200 flex items-center gap-2 mb-4 sm:mb-0" 
-                onClick={() => navigate(`/menu?table=${tableNumber}`)}
-            >
-                🍜 <span className="font-sans">QR Order</span>
-            </h1>
+        <div className="flex justify-between items-center px-4 py-3 bg-black text-white">
+            <div className="font-semibold">
+                โต๊ะ {tableNumber}
+            </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="flex gap-4 items-center">
                 <button
-                    className="w-full sm:w-auto bg-white text-orange-500 px-4 py-2 rounded-lg hover:bg-orange-50 transition-colors duration-200 flex items-center justify-center gap-2 font-medium shadow-md"
-                    onClick={onOpenCart}
+                    onClick={() =>
+                        navigate(`/customer/history?table=${tableNumber}`)
+                    }
                 >
-                    🛒 <span>ตะกร้า ({cartCount})</span>
+                    📜
                 </button>
 
-                <button
-                    className="w-full sm:w-auto bg-white text-orange-500 px-4 py-2 rounded-lg hover:bg-orange-50 transition-colors duration-200 flex items-center justify-center gap-2 font-medium shadow-md"
-                    onClick={() => navigate(`/history?table=${tableNumber}`)}
-                >
-                    📝 <span>ประวัติ</span>
+                <button onClick={onOpenCart} className="relative text-xl">
+                    🛒
+                    {cartCount > 0 && (
+                        <span className="absolute -top-2 -right-2
+                            bg-red-600 text-xs rounded-full px-2">
+                            {cartCount}
+                        </span>
+                    )}
                 </button>
             </div>
         </div>

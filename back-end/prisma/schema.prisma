@@ -7,35 +7,57 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  KITCHEN
+}
+
 model Category {
-  id    Int    @id @default(autoincrement())
+  id    Int     @id @default(autoincrement())
   name  String
+  image String?
   menus Menu[]
 }
 
 model Menu {
   id         Int         @id @default(autoincrement())
   name       String
-  price      Float
+  price      Float?
   image      String?
   category   Category    @relation(fields: [categoryId], references: [id])
   categoryId Int
   OrderItem  OrderItem[]
+  createdAt  DateTime    @default(now())
 }
 
 model Order {
   id          Int         @id @default(autoincrement())
   tableNumber Int
-  status      String      @default("in_kitchen")
+  status      OrderStatus @default(PENDING)
   createdAt   DateTime    @default(now())
   items       OrderItem[]
 }
 
 model OrderItem {
-  id       Int   @id @default(autoincrement())
-  order    Order @relation(fields: [orderId], references: [id])
-  orderId  Int
-  menu     Menu  @relation(fields: [menuId], references: [id])
-  menuId   Int
-  quantity Int
+  id      Int @id @default(autoincrement())
+  orderId Int
+  menuId  Int
+  qty     Int
+
+  order Order @relation(fields: [orderId], references: [id])
+  menu  Menu  @relation(fields: [menuId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  COOKING
+  DONE
 }

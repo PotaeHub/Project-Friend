@@ -21,15 +21,3 @@ export const getMenusByCategory = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-export const createMenu = async (req, res) => {
-    try {
-        const { name, price, image, categoryId } = req.body;
-        const menu = await prisma.menu.create({
-            data: { name, price, image, category: { connect: { id: categoryId } } },
-        });
-        res.json(menu);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};

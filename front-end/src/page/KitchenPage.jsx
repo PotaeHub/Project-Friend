@@ -1,39 +1,86 @@
 import { useEffect, useState } from "react";
-import io from "socket.io-client";
 import api from "../axios";
-
-const socket = io("http://localhost:5000");
+import socket from "../socketAdmin";
 
 export default function KitchenPage() {
     const [orders, setOrders] = useState([]);
 
+    /* ===== LOAD ORDERS ===== */
+    const loadOrders = async () => {
+        const res = await api.get("/kitchen/orders");
+        setOrders(res.data);
+    };
+
     useEffect(() => {
-        api.get("/orders").then(res => setOrders(res.data));
-        socket.on("new-order", order => setOrders(prev => [order, ...prev]));
+        loadOrders();
+
+        socket.on("order-confirmed", loadOrders);
+        socket.on("order-status-updated", loadOrders);
+
+        return () => {
+            socket.off("order-confirmed");
+            socket.off("order-status-updated");
+        };
     }, []);
 
-    const markDone = async id => {
-        await api.put(`/orders/${id}/status`, { status: "done" });
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, status: "done" } : o));
+    /* ===== UPDATE STATUS ===== */
+    const changeStatus = async (orderId, status) => {
+        await api.patch(`/kitchen/orders/${orderId}`, { status });
     };
 
     return (
-        <div className="p-4 max-w-screen-lg mx-auto">
-            <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">ครัว</h1>
+        <div className="p-4 space-y-4">
+            <h1 className="text-2xl font-bold">🍳 Kitchen</h1>
+
             {orders.map(order => (
-                <div key={order.id} className="border p-4 rounded mb-4 bg-white shadow-lg transition-transform transform hover:scale-105">
-                    <p className="font-semibold text-orange-600 text-lg">โต๊ะ {order.tableNumber}</p>
-                    <ul className="ml-4 list-disc">
-                        {order.items.map(i => (
-                            <li key={i.id} className="text-gray-700">{i.menu.name} × {i.quantity}</li>
-                        ))}
-                    </ul>
-                    <p className="text-gray-600">สถานะ: {order.status}</p>
-                    {order.status !== "done" && (
-                        <button onClick={() => markDone(order.id)} className="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
-                            เสร็จแล้ว
-                        </button>
-                    )}
+                <div
+                    key={order.id}
+                    className="border rounded-xl p-4 shadow"
+                >
+                    <div className="flex justify-between mb-2">
+                        <span className="font-bold">
+                            โต๊ะ {order.tableNumber}
+                        </span>
+
+                        <span className={`font-bold
+                            ${order.status === "PENDING" && "text-yellow-600"}
+                            ${order.status === "COOKING" && "text-orange-600"}
+                            ${order.status === "DONE" && "text-green-600"}
+                        `}>
+                            {order.status}
+                        </span>
+                    </div>
+
+                    {order.items.map(item => (
+                        <div key={item.id} className="text-sm">
+                            {item.menu.name} x {item.qty}
+                        </div>
+                    ))}
+
+                    {/* ===== ACTIONS ===== */}
+                    <div className="flex gap-2 mt-3">
+                        {order.status === "PENDING" && (
+                            <button
+                                onClick={() =>
+                                    changeStatus(order.id, "COOKING")
+                                }
+                                className="px-3 py-1 bg-orange-500 text-white rounded"
+                            >
+                                เริ่มทำ
+                            </button>
+                        )}
+
+                        {order.status === "COOKING" && (
+                            <button
+                                onClick={() =>
+                                    changeStatus(order.id, "DONE")
+                                }
+                                className="px-3 py-1 bg-green-600 text-white rounded"
+                            >
+                                เสร็จแล้ว
+                            </button>
+                        )}
+                    </div>
                 </div>
             ))}
         </div>
