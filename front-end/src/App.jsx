@@ -14,6 +14,7 @@ import AdminDashboard from "./page/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminTables from "./page/AdminTables";
 import AdminPackages from "./page/AdminPackages";
+import CustomerPage from "./page/customer/CustomerPage";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
       {/* ===== Public ===== */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/menu" element={<MenuPage />} />
+      <Route path="/table/:tableNumber" element={<CustomerPage />} />
       <Route path="/customer/history" element={<HistoryPage />} />
 
       {/* ===== ADMIN ===== */}

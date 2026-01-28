@@ -1,18 +1,24 @@
 import { Router } from "express";
-import { getActiveSessionByTable, getCustomerCategories, getCustomerMenus,  getOrderHistoryByTable, getOrdersBySession } from "../controllers/customer.controller.js";
+import {
+    getActiveSessionByTable,
+    getCustomerCategories,
+    getCustomerMenus,
+    getOrdersBySession
+} from "../controllers/customer.controller.js";
 
 const router = Router();
 
+/* ===== เมนูลูกค้า ===== */
 router.get("/customer/menus", getCustomerMenus);
 router.get("/customer/categories", getCustomerCategories);
-router.get("/customer/orders/:tableNumber", getOrderHistoryByTable);
 
+/* ===== เช็ค session โต๊ะ ===== */
 router.get(
     "/customer/table/:tableNumber/session",
     getActiveSessionByTable
 );
 
-/* 🔥 ประวัติการสั่ง (ตาม session) */
+/* ===== ประวัติออเดอร์ (ถูกต้องตาม schema) ===== */
 router.get(
     "/customer/session/:sessionId/orders",
     getOrdersBySession

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
-
+import socket from "../socketCashier";
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -52,7 +52,8 @@ export function AuthProvider({ children }) {
     };
 
     const logout = () => {
-        localStorage.clear();
+        socket.disconnect(); // 🔥 ป้องกัน ghost connection
+        localStorage.removeItem("token");
         setUser(null);
         navigate("/login", { replace: true });
     };

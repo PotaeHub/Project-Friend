@@ -20,55 +20,65 @@ export const getCustomerCategories = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-export const getOrderHistoryByTable = async (req, res) => {
-    try {
-        const tableNumber = Number(req.params.tableNumber);
+// export const getOrderHistoryByTable = async (req, res) => {
+//     try {
+//         const tableNumber = Number(req.params.tableNumber);
 
-        const orders = await prisma.order.findMany({
-            where: { tableNumber },
-            orderBy: { createdAt: "desc" },
-            include: {
-                items: {
-                    include: {
-                        menu: {
-                            select: {
-                                name: true,
-                                price: true
-                            }
-                        }
-                    }
-                }
-            }
-        });
+//         const orders = await prisma.order.findMany({
+//             where: { tableNumber },
+//             orderBy: { createdAt: "desc" },
+//             include: {
+//                 items: {
+//                     include: {
+//                         menu: {
+//                             select: {
+//                                 name: true,
+//                                 price: true
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         });
 
-        res.json(orders);
-    } catch (err) {
-        res.status(500).json({ message: "Server error" });
-    }
-};
+//         res.json(orders);
+//     } catch (err) {
+//         res.status(500).json({ message: "Server error" });
+//     }
+// };
 export const getActiveSessionByTable = async (req, res) => {
-    const tableNumber = Number(req.params.tableNumber);
+    const rawTableNumber = req.params.tableNumber;
 
+    console.log("params =", req.params);
+
+    // 🔥 เช็คว่ามาไหม
+    if (!rawTableNumber || rawTableNumber === "undefined") {
+        return res.status(400).json({
+            message: "tableNumber is required"
+        });
+    }
+
+    const tableNumber = Number(rawTableNumber);
+
+    // 🔥 เช็คว่าเป็นตัวเลขจริง
+    if (!Number.isInteger(tableNumber)) {
+        return res.status(400).json({
+            message: "Invalid tableNumber"
+        });
+    }
     try {
-        /* หา table ก่อน */
         const table = await prisma.table.findUnique({
             where: { number: tableNumber }
         });
 
         if (!table) {
-            return res.status(404).json({
-                message: "Table not found"
-            });
+            return res.status(404).json({ message: "Table not found" });
         }
 
-        /* หา session ที่ ACTIVE */
         const session = await prisma.buffetSession.findFirst({
             where: {
                 tableId: table.id,
                 status: "ACTIVE"
-            },
-            orderBy: {
-                startTime: "desc"
             }
         });
 
@@ -89,38 +99,34 @@ export const getActiveSessionByTable = async (req, res) => {
     }
 };
 
+
 /* ================= ORDER HISTORY ================= */
 export const getOrdersBySession = async (req, res) => {
-    const sessionId = Number(req.params.sessionId);
-
-    /* 🔥 VALIDATE */
-    if (!sessionId || isNaN(sessionId)) {
-        return res.status(400).json({
-            message: "Invalid sessionId"
-        });
-    }
-
     try {
+        const sessionId = Number(req.params.sessionId);
+
+        if (!sessionId) {
+            return res.status(400).json({ message: "sessionId missing" });
+        }
+
         const orders = await prisma.order.findMany({
             where: {
                 buffetSessionId: sessionId
             },
-            orderBy: {
-                createdAt: "desc"
-            },
             include: {
                 items: {
-                    include: {
-                        menu: true
-                    }
+                    include: { menu: true }
                 }
+            },
+            orderBy: {
+                createdAt: "desc"
             }
         });
 
         res.json(orders);
 
     } catch (err) {
-        console.error("❌ getOrdersBySession:", err);
-        res.status(500).json({ message: "Internal server error" });
+        console.error("GET ORDERS ERROR:", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

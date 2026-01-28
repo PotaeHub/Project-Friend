@@ -1,42 +1,88 @@
 import { prisma } from "../config/db.js";
-export const getKitchenOrders = async (req, res) => {
+export const getKitchenOrdersByTable = async (req, res) => {
     try {
         const orders = await prisma.order.findMany({
-            orderBy: { createdAt: "asc" },
+            where: {
+                status: "COOKING"
+            },
             include: {
-                items: {
+                buffetSession: {
                     include: {
-                        menu: {
-                            select: {
-                                name: true
-                            }
-                        }
+                        table: true
+                    }
+                },
+                items: {
+                    include: { menu: true }
+                }
+            },
+            orderBy: { createdAt: "asc" }
+        });
+        const grouped = {};
+
+        orders.forEach(order => {
+            const tableNumber = order.buffetSession.table.number;
+            if (!grouped[tableNumber]) {
+                grouped[tableNumber] = [];
+            }
+            grouped[tableNumber].push(order);
+        });
+
+        res.json(grouped);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Kitchen load failed" });
+    }
+};
+export const doneTableOrders = async (req, res) => {
+    try {
+        const { tableNumber } = req.params;
+        const io = req.app.get("io");
+
+        await prisma.order.updateMany({
+            where: {
+                status: "COOKING",
+                buffetSession: {
+                    table: {
+                        number: Number(tableNumber)
                     }
                 }
+            },
+            data: {
+                status: "DONE"
             }
         });
 
-        res.json(orders);
+        io.to("kitchen").emit("table:done", tableNumber);
+        io.to(`table-${tableNumber}`).emit("order:done");
+
+        res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ message: "Server error" });
+        console.error(err);
+        res.status(500).json({ message: "Update failed" });
     }
 };
+
 export const updateOrderStatus = async (req, res) => {
     try {
+        const io = req.app.get("io");
+        const { id } = req.params;
         const { status } = req.body;
-        const orderId = Number(req.params.id);
 
         const order = await prisma.order.update({
-            where: { id: orderId },
-            data: { status }
+            where: { id: Number(id) },
+            data: { status },
+            include: {
+                items: { include: { menu: true } },
+                buffetSession: { include: { table: true } }
+            }
         });
 
-        // 🔥 realtime
-        const io = req.app.get("io");
-        io.emit("order-status-updated", order);
+        // 🔥 แจ้ง kitchen ว่ามี order เปลี่ยน
+        io.to("kitchen").emit("order:update", order);
 
         res.json(order);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Update failed" });
     }
 };

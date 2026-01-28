@@ -41,28 +41,25 @@ export const getOrdersByTable = async (req, res) => {
 export const createOrder = async (req, res) => {
     try {
         const io = req.app.get("io");
-        const { tableNumber, items } = req.body;
-        const table = await prisma.table.findUnique({
-            where: { number: tableNumber },
-            include: {
-                buffetSessions: {
-                    where: { status: "ACTIVE" },
-                    take: 1
-                }
-            }
-        });
+        const { buffetSessionId, items } = req.body;
 
-        if (!table || table.buffetSessions.length === 0) {
-            return res.status(400).json({ message: "โต๊ะนี้ยังไม่เปิดบุฟเฟต์" });
+        if (!buffetSessionId || !items?.length) {
+            return res.status(400).json({ message: "Invalid data" });
         }
 
-        const session = table.buffetSessions[0];
+        const session = await prisma.buffetSession.findUnique({
+            where: { id: Number(buffetSessionId) },
+            include: { table: true }
+        });
+
+        if (!session || session.status !== "ACTIVE") {
+            return res.status(400).json({ message: "Session not active" });
+        }
+
         const order = await prisma.order.create({
             data: {
-                buffetSession: {
-                    connect: { id: session.id }
-                },
-                status: "PENDING",
+                buffetSessionId: session.id,
+                status: "COOKING",
                 items: {
                     create: items.map(i => ({
                         menuId: Number(i.menuId),
@@ -71,24 +68,28 @@ export const createOrder = async (req, res) => {
                 }
             },
             include: {
-                items: { include: { menu: true } }
+                items: { include: { menu: true } },
+                buffetSession: {
+                    include: { table: true }
+                }
             }
         });
 
-
-        // 🔥 realtime กลาง
+        // 🔥 REALTIME
         io.to("kitchen").emit("order:new", order);
         io.to("admin").emit("order:new", order);
-        io.to(`table-${tableNumber}`).emit("order:new", order);
-
-        await emitDashboard();
+        io.to(`session-${session.id}`).emit("order:new", order);
 
         res.status(201).json(order);
+
     } catch (err) {
-        console.log(err)
-        res.status(500).json({ error: err.message });
+        console.error("CREATE ORDER ERROR:", err);
+        res.status(500).json({ message: "Create order failed" });
     }
 };
+
+
+
 
 // export const updateOrderStatus = async (req, res) => {
 //     try {

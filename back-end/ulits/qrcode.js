@@ -7,7 +7,7 @@ if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 const totalTables = 10;
 
 for (let table = 1; table <= totalTables; table++) {
-    const url = `http://localhost:5173/customer/menu?table=${table}`;
+    const url = `http://localhost:5173/table/${table}`;
     const fileName = `${dir}/table_${table}.png`;
 
     QRCode.toFile(fileName, url, { width: 300 }, (err) => {

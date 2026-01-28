@@ -1,6 +1,6 @@
-import * as cashierService from "../services/cashier.service.js";
 import { prisma } from "../config/db.js";
 
+/* ================= GET TABLES ================= */
 export const getTables = async (req, res) => {
     const tables = await prisma.table.findMany({
         orderBy: { number: "asc" },
@@ -19,16 +19,25 @@ export const getTables = async (req, res) => {
     res.json(tables);
 };
 
+/* ================= PACKAGES ================= */
 export const getPackages = async (req, res) => {
     const packages = await prisma.buffetPackage.findMany();
     res.json(packages);
 };
 
+/* ================= OPEN TABLE ================= */
 export const openTable = async (req, res) => {
     const { tableId, packages } = req.body;
     const cashierId = req.user.id;
 
-    const table = await prisma.table.findUnique({ where: { id: tableId } });
+    const table = await prisma.table.findUnique({
+        where: { id: tableId }
+    });
+
+    if (!table) {
+        return res.status(404).json({ message: "ไม่พบโต๊ะ" });
+    }
+
     if (table.status === "OPEN") {
         return res.status(400).json({ message: "โต๊ะนี้เปิดอยู่แล้ว" });
     }
@@ -36,17 +45,13 @@ export const openTable = async (req, res) => {
     const session = await prisma.buffetSession.create({
         data: {
             status: "ACTIVE",
-            cashier: {
-                connect: { id: cashierId }
-            },
-            table: {
-                connect: { id: tableId }
-            },
+            cashierId,
+            tableId,
             packages: {
-                create: [
-                    { packageId: 2, qty: 1 },
-                    { packageId: 1, qty: 1 }
-                ]
+                create: packages.map(p => ({
+                    packageId: p.packageId,
+                    qty: p.qty
+                }))
             }
         },
         include: {
@@ -56,33 +61,42 @@ export const openTable = async (req, res) => {
         }
     });
 
-
     await prisma.table.update({
         where: { id: tableId },
-        data: { status: "OPEN" }
-    });
-
-    req.app.get("io").emit("table:update");
-    res.json(session);
-};
-
-
-export const closeTable = async (req, res) => {
-    const { sessionId } = req.params;
-    const { paidAmount, paymentType } = req.body;
-
-    const session = await prisma.buffetSession.findUnique({
-        where: { id: Number(sessionId) },
-        include: {
-            packages: {
-                include: { package: true }
-            }
+        data: {
+            status: "OPEN",
         }
     });
 
-    if (!session || session.status !== "ACTIVE") {
-        return res.status(400).json({ message: "Session ไม่ถูกต้อง" });
+    req.app.get("io").emit("table:update");
+
+    res.json(session);
+};
+
+/* ================= CLOSE TABLE ================= */
+export const closeTable = async (req, res) => {
+    const { sessionId } = req.params; // ใช้แค่อ้างอิง
+    const { paidAmount, paymentType } = req.body;
+
+
+    const session = await prisma.buffetSession.findFirst({
+        where: {
+            id: Number(sessionId),
+            status: "ACTIVE"
+        },
+        include: {
+            packages: { include: { package: true } },
+            table: true
+        }
+    });
+
+
+    if (!session) {
+        return res.status(400).json({
+            message: "โต๊ะนี้ยังไม่ได้เปิด หรือถูกปิดไปแล้ว"
+        });
     }
+
 
     const totalPrice = session.packages.reduce(
         (sum, p) => sum + p.package.price * p.qty,
@@ -100,6 +114,7 @@ export const closeTable = async (req, res) => {
             endTime: new Date()
         }
     });
+
 
     await prisma.table.update({
         where: { id: session.tableId },
@@ -122,3 +137,4 @@ export const closeTable = async (req, res) => {
         change: paidAmount - totalPrice
     });
 };
+

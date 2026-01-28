@@ -56,40 +56,27 @@ io.use((socket, next) => {
 
 const tableCarts = {};
 
-io.on("connection", async (socket) => {
-    console.log("🔌", socket.id, socket.user.role);
+io.on("connection", (socket) => {
+    console.log("🔌 connect", socket.id, socket.user.role);
 
-    if (socket.user.role === "ADMIN") {
-        socket.join("admin");
-        await emitDashboard();
-    }
-
+    if (socket.user.role === "ADMIN") socket.join("admin");
     if (socket.user.role === "KITCHEN") socket.join("kitchen");
 
-    socket.on("join-table", (tableNumber) => {
-        socket.join(`table-${tableNumber}`);
+    socket.on("join-table", ({ sessionId }) => {
+        socket.join(`session-${sessionId}`);
     });
 
-    socket.on("update-cart", ({ tableNumber, cart }) => {
-        tableCarts[tableNumber] = cart;
+    socket.on("update-cart", ({ sessionId, cart }) => {
+        tableCarts[sessionId] = cart;
 
-        io.to(`table-${tableNumber}`).emit("cart-update", cart);
-
-        io.to("kitchen").emit("kitchen-cart-update", {
-            tableNumber,
-            cart
-        });
+        io.to(`session-${sessionId}`).emit("cart-update", cart);
     });
 
-    socket.on("confirm-order", async ({ tableNumber }) => {
-        io.to("kitchen").emit("order-confirmed", {
-            tableNumber
-        });
+    socket.on("confirm-order", ({ sessionId }) => {
+        delete tableCarts[sessionId];
 
-        io.to("admin").emit("order-confirmed", {
-            tableNumber
-        });
-        await emitDashboard();
+        io.to("kitchen").emit("order-confirmed", { sessionId });
+        io.to("admin").emit("order-confirmed", { sessionId });
     });
 
     socket.on("disconnect", () => {
