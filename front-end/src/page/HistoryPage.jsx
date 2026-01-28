@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import api from "../axios";
+import api from "../axiosCustomer";
 
 export default function OrderHistory() {
     const [orders, setOrders] = useState([]);

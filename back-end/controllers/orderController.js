@@ -41,16 +41,27 @@ export const getOrdersByTable = async (req, res) => {
 export const createOrder = async (req, res) => {
     try {
         const io = req.app.get("io");
+        const { tableNumber, items } = req.body;
+        const table = await prisma.table.findUnique({
+            where: { number: tableNumber },
+            include: {
+                buffetSessions: {
+                    where: { status: "ACTIVE" },
+                    take: 1
+                }
+            }
+        });
 
-        const { tableNumber, items, status } = req.body;
-
-        if (!items || items.length === 0) {
-            return res.status(400).json({ message: "Items is empty" });
+        if (!table || table.buffetSessions.length === 0) {
+            return res.status(400).json({ message: "โต๊ะนี้ยังไม่เปิดบุฟเฟต์" });
         }
 
+        const session = table.buffetSessions[0];
         const order = await prisma.order.create({
             data: {
-                tableNumber,
+                buffetSession: {
+                    connect: { id: session.id }
+                },
                 status: "PENDING",
                 items: {
                     create: items.map(i => ({
@@ -64,14 +75,17 @@ export const createOrder = async (req, res) => {
             }
         });
 
+
+        // 🔥 realtime กลาง
+        io.to("kitchen").emit("order:new", order);
+        io.to("admin").emit("order:new", order);
+        io.to(`table-${tableNumber}`).emit("order:new", order);
+
         await emitDashboard();
 
-        io.to("kitchen").emit("new-order", order);
-        io.to("admin").emit("new-order", order);
-        console.log(order)
         res.status(201).json(order);
     } catch (err) {
-        console.error("CREATE ORDER ERROR:", err);
+        console.log(err)
         res.status(500).json({ error: err.message });
     }
 };
@@ -110,6 +124,26 @@ export const createOrder = async (req, res) => {
 //     }
 // };
 
+export const updateOrderStatus = async (req, res) => {
+    try {
+        const io = req.app.get("io");
+        const orderId = Number(req.params.id);
+        const { status } = req.body;
+
+        const order = await prisma.order.update({
+            where: { id: orderId },
+            data: { status },
+            include: { items: { include: { menu: true } } }
+        });
+
+        io.emit("order:update", order);
+        await emitDashboard();
+
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ message: "Update failed" });
+    }
+};
 
 export const getOrderHistory = async (req, res) => {
     try {

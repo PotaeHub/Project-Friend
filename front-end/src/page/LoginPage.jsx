@@ -1,22 +1,24 @@
 // src/page/LoginPage.jsx
 import { useState } from "react";
 import api from "../axios";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const navigate = useNavigate();
+    const { login } = useAuth(); // 🔥 ใช้จาก context
 
-    const login = async () => {
+    const handleLogin = async () => {
         try {
-            const res = await api.post("/auth/login", { username, password });
-            localStorage.setItem("token", res.data.token);
-            localStorage.setItem("role", res.data.role);
+            const res = await api.post("/auth/login", {
+                username,
+                password,
+            });
 
-            if (res.data.role === "ADMIN") navigate("/admin");
-            else navigate("/kitchen");
-        } catch {
+            // 🔥 จุดสำคัญที่สุด
+            login(res.data.token);
+
+        } catch (err) {
             alert("เข้าสู่ระบบไม่สำเร็จ");
         }
     };
@@ -31,17 +33,20 @@ export default function LoginPage() {
                 <input
                     className="w-full border p-3 rounded mb-3"
                     placeholder="Username"
+                    value={username}
                     onChange={e => setUsername(e.target.value)}
                 />
+
                 <input
                     type="password"
                     className="w-full border p-3 rounded mb-4"
                     placeholder="Password"
+                    value={password}
                     onChange={e => setPassword(e.target.value)}
                 />
 
                 <button
-                    onClick={login}
+                    onClick={handleLogin}
                     className="w-full bg-orange-500 text-white py-3 rounded hover:bg-orange-600 transition"
                 >
                     เข้าสู่ระบบ

@@ -1,87 +1,68 @@
 import { useEffect, useState } from "react";
+import socket from "../../axiosAuth";
 import api from "../axios";
-import socket from "../socketAdmin";
+import KitchenOrderCard from "../components/kitchen/KitchenOrderCard";
 
 export default function KitchenPage() {
     const [orders, setOrders] = useState([]);
+    const [loadingId, setLoadingId] = useState(null);
 
-    /* ===== LOAD ORDERS ===== */
-    const loadOrders = async () => {
-        const res = await api.get("/kitchen/orders");
-        setOrders(res.data);
-    };
-
+    /* ===== โหลดครั้งแรก ===== */
     useEffect(() => {
+        const loadOrders = async () => {
+            const res = await api.get("/kitchen/orders");
+            setOrders(res.data);
+        };
         loadOrders();
+    }, []);
 
-        socket.on("order-confirmed", loadOrders);
-        socket.on("order-status-updated", loadOrders);
+    /* ===== realtime ===== */
+    useEffect(() => {
+        socket.on("order:new", order => {
+            setOrders(prev => [order, ...prev]);
+        });
+
+        socket.on("order:update", updated => {
+            setOrders(prev =>
+                prev.map(o => (o.id === updated.id ? updated : o))
+            );
+        });
 
         return () => {
-            socket.off("order-confirmed");
-            socket.off("order-status-updated");
+            socket.off("order:new");
+            socket.off("order:update");
         };
     }, []);
 
-    /* ===== UPDATE STATUS ===== */
-    const changeStatus = async (orderId, status) => {
-        await api.patch(`/kitchen/orders/${orderId}`, { status });
+    /* ===== update status ===== */
+    const updateStatus = async (id, status) => {
+        try {
+            setLoadingId(id);
+            await api.patch(`/kitchen/orders/${id}`, { status });
+        } finally {
+            setLoadingId(null);
+        }
     };
 
     return (
         <div className="p-4 space-y-4">
-            <h1 className="text-2xl font-bold">🍳 Kitchen</h1>
+            <h1 className="text-2xl font-bold mb-4">
+                🍳 ออเดอร์ครัว
+            </h1>
+
+            {orders.length === 0 && (
+                <div className="text-gray-500 text-center mt-10">
+                    ไม่มีออเดอร์
+                </div>
+            )}
 
             {orders.map(order => (
-                <div
+                <KitchenOrderCard
                     key={order.id}
-                    className="border rounded-xl p-4 shadow"
-                >
-                    <div className="flex justify-between mb-2">
-                        <span className="font-bold">
-                            โต๊ะ {order.tableNumber}
-                        </span>
-
-                        <span className={`font-bold
-                            ${order.status === "PENDING" && "text-yellow-600"}
-                            ${order.status === "COOKING" && "text-orange-600"}
-                            ${order.status === "DONE" && "text-green-600"}
-                        `}>
-                            {order.status}
-                        </span>
-                    </div>
-
-                    {order.items.map(item => (
-                        <div key={item.id} className="text-sm">
-                            {item.menu.name} x {item.qty}
-                        </div>
-                    ))}
-
-                    {/* ===== ACTIONS ===== */}
-                    <div className="flex gap-2 mt-3">
-                        {order.status === "PENDING" && (
-                            <button
-                                onClick={() =>
-                                    changeStatus(order.id, "COOKING")
-                                }
-                                className="px-3 py-1 bg-orange-500 text-white rounded"
-                            >
-                                เริ่มทำ
-                            </button>
-                        )}
-
-                        {order.status === "COOKING" && (
-                            <button
-                                onClick={() =>
-                                    changeStatus(order.id, "DONE")
-                                }
-                                className="px-3 py-1 bg-green-600 text-white rounded"
-                            >
-                                เสร็จแล้ว
-                            </button>
-                        )}
-                    </div>
-                </div>
+                    order={order}
+                    loading={loadingId === order.id}
+                    onUpdateStatus={updateStatus}
+                />
             ))}
         </div>
     );

@@ -23,6 +23,12 @@ export default function AdminSidebar() {
                 <NavLink to="/admin/menus" className={linkClass}>
                     🍽 เมนูอาหาร
                 </NavLink>
+                <NavLink to="/admin/tables" className={linkClass}>
+                    🍽 จัดการโต๊ะ
+                </NavLink>
+                <NavLink to="/admin/packages" className={linkClass}>
+                    🍽 จัดการแพ็กเกจ 
+                </NavLink>
             </nav>
         </div>
     );

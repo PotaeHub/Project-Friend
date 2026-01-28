@@ -1,17 +1,21 @@
-export default function CategoryBar({ categories, active, onChange }) {
+export default function CategoryBar({
+    categories,
+    activeCat,
+    onSelect
+}) {
     return (
-        <div className="flex gap-3 overflow-x-auto p-3">
-            {categories.map(c => (
+        <div className="flex gap-2 px-4 py-3 overflow-x-auto">
+            {categories.map(cat => (
                 <button
-                    key={c.id}
-                    onClick={() => onChange(c.id)}
+                    key={cat.id}
+                    onClick={() => onSelect(cat.id)}
                     className={`px-4 py-2 rounded-full whitespace-nowrap
-                        ${active === c.id
-                            ? "bg-orange-500 text-white"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
+                        ${activeCat === cat.id
+                            ? "bg-black text-white"
+                            : "bg-gray-200"}
+                    `}
                 >
-                    {c.name}
+                    {cat.name}
                 </button>
             ))}
         </div>

@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children, role }) {
+export default function ProtectedRoute({ children, roles }) {
     const { user, loading } = useAuth();
 
     if (loading) return null;
@@ -11,11 +11,9 @@ export default function ProtectedRoute({ children, role }) {
         return <Navigate to="/login" replace />;
     }
 
-    // ❌ login แล้ว แต่ role ไม่ตรง
-    if (role && user.role !== role) {
-        if (user.role === "ADMIN") return <Navigate to="/admin" replace />;
-        if (user.role === "KITCHEN") return <Navigate to="/kitchen" replace />;
-        return <Navigate to="/customer/menu" replace />;
+    // ❌ role ไม่ตรง
+    if (roles && !roles.includes(user.role)) {
+        return <Navigate to="/unauthorized" replace />;
     }
 
     return children;

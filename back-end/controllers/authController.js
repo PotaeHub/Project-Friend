@@ -40,7 +40,11 @@ export const login = async (req, res) => {
     if (!ok) return res.status(401).json({ error: "Wrong password" });
 
     const token = jwt.sign(
-        { id: user.id, role: user.role },
+        {
+            id: user.id,
+            role: user.role,
+            username: user.username // (optional แต่มีประโยชน์)
+        },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
     );

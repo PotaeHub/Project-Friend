@@ -4,13 +4,16 @@ import MenuPage from "./page/customer/CustomerPage";
 import KitchenPage from "./page/KitchenPage";
 import HistoryPage from "./page/HistoryPage";
 import LoginPage from "./page/LoginPage";
+import CashierPage from "./page/cashier/CashierPage";
 
 import AdminLayout from "./page/AdminLayout";
 import AdminCategories from "./page/AdminCategories";
 import AdminMenus from "./page/AdminMenus";
+import AdminDashboard from "./page/AdminDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminDashboard from "./page/AdminDashboard";
+import AdminTables from "./page/AdminTables";
+import AdminPackages from "./page/AdminPackages";
 
 export default function App() {
   return (
@@ -21,29 +24,41 @@ export default function App() {
       <Route path="/menu" element={<MenuPage />} />
       <Route path="/customer/history" element={<HistoryPage />} />
 
-      {/* ===== Kitchen (Protected) ===== */}
+      {/* ===== ADMIN ===== */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute roles={["ADMIN"]}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="categories" element={<AdminCategories />} />
+        <Route path="menus" element={<AdminMenus />} />
+        <Route path="tables" element={<AdminTables />} />
+        <Route path="packages" element={<AdminPackages />} />
+      </Route>
+
+      {/* ===== KITCHEN ===== */}
       <Route
         path="/kitchen"
         element={
-          <ProtectedRoute role="KITCHEN">
+          <ProtectedRoute roles={["KITCHEN"]}>
             <KitchenPage />
           </ProtectedRoute>
         }
       />
 
+      {/* ===== CASHIER ===== */}
       <Route
-        path="/admin"
+        path="/cashier"
         element={
-          <ProtectedRoute role="ADMIN">
-            <AdminLayout />
+          <ProtectedRoute roles={["CASHIER"]}>
+            <CashierPage />
           </ProtectedRoute>
         }
-      >
-
-        <Route index element={<AdminDashboard />} />
-        <Route path="categories" element={<AdminCategories />} />
-        <Route path="menus" element={<AdminMenus />} />
-      </Route>
+      />
 
       {/* ===== 404 ===== */}
       <Route

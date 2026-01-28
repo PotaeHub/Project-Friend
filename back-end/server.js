@@ -6,6 +6,7 @@ import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { emitDashboard } from "./controllers/emitDashboard.js";
+import { startTableTimer } from "./socket/timer.js";
 
 dotenv.config();
 const app = express();
@@ -95,7 +96,7 @@ io.on("connection", async (socket) => {
         console.log("❌ disconnect", socket.id);
     });
 });
-
+startTableTimer();
 server.listen(5000, () =>
     console.log("✅ Server running :5000")
 );

@@ -1,30 +1,36 @@
-export default function MenuCard({ item, onAdd, onRemove }) {
+export default function MenuCard({ menu, qty, onAdd, onRemove }) {
     return (
-        <div className="bg-white rounded-2xl shadow p-3 flex flex-col">
+        <div className="bg-white rounded-xl shadow p-3">
             <img
-                src={import.meta.env.VITE_BACKEND_URL + item.image}
-                className="h-32 object-cover rounded-xl"
+                src={
+                    menu.image
+                        ? `${import.meta.env.VITE_BACKEND_URL}${menu.image}`
+                        : "/no-image.png"
+                }
+                className="w-full h-32 object-cover rounded"
+                onError={(e) => {
+                    e.target.src = "/no-image.png";
+                }}
             />
 
-            <h3 className="font-semibold mt-2">{item.name}</h3>
-            <p className="text-orange-500 font-bold">
-                {item.price} ฿
-            </p>
+            <h3 className="mt-2 font-semibold text-sm">
+                {menu.name}
+            </h3>
 
-            <div className="flex justify-between items-center mt-auto">
+            {/* ===== BUTTON ===== */}
+            <div className="flex items-center justify-between mt-2">
                 <button
                     onClick={onRemove}
-                    disabled={item.qty === 0}
-                    className="w-8 h-8 bg-red-500 text-white rounded-full disabled:opacity-30"
+                    className="w-8 h-8 rounded-full bg-gray-200 text-lg"
                 >
-                    -
+                    −
                 </button>
 
-                <span>{item.qty}</span>
+                <span className="font-bold text-lg">{qty}</span>
 
                 <button
                     onClick={onAdd}
-                    className="w-8 h-8 bg-green-500 text-white rounded-full"
+                    className="w-8 h-8 rounded-full bg-black text-white text-lg"
                 >
                     +
                 </button>

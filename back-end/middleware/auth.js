@@ -1,13 +1,28 @@
 import jwt from "jsonwebtoken";
 
 export const auth = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "No token" });
+    console.log("🔥 AUTH HIT:", req.method, req.originalUrl);
+
+    if (req.method === "OPTIONS") {
+        console.log("✅ SKIP OPTIONS");
+        return next();
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ message: "no token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({ message: "no token" });
+    }
 
     try {
-        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
         next();
-    } catch {
-        res.status(401).json({ error: "Invalid token" });
+    } catch (err) {
+        return res.status(401).json({ message: "invalid token" });
     }
 };

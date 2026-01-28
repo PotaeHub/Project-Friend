@@ -26,19 +26,22 @@ export const adminGetMenus = async (req, res) => {
     }
 };
 // Menu Admin
-export const getMenus = async (req, res) => {
+export const getMenuById = async (req, res) => {
     try {
-        const menus = await prisma.menu.findMany({
-            where: { id },
+        const { id } = req.params;
+
+        const menu = await prisma.menu.findUnique({
+            where: { id: Number(id) },
             include: { category: true }
         });
-        res.json(menus);
-    } catch (error) {
-        console.error("CREATE MENU ERROR:", err);
-        res.status(500).json({ message: "Create menu failed" });
-    }
 
+        res.json(menu);
+    } catch (err) {
+        console.error("GET MENU ERROR:", err);
+        res.status(500).json({ message: "Get menu failed" });
+    }
 };
+
 export const createMenu = async (req, res) => {
     try {
         const { name, categoryId } = req.body;
