@@ -7,7 +7,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
+/**
+ * =======================
+ * USER / ROLE
+ * =======================
+ */
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -24,13 +28,19 @@ enum Role {
   CASHIER
 }
 
-
-
+/**
+ * =======================
+ * TABLE
+ * =======================
+ */
 model Table {
-  id             Int             @id @default(autoincrement())
-  number         Int             @unique
-  status         TableStatus     @default(EMPTY)
+  id     Int         @id @default(autoincrement())
+  number Int         @unique
+  status TableStatus @default(EMPTY)
+
   buffetSessions BuffetSession[]
+  zone           Zone?           @relation(fields: [zoneId], references: [id])
+  zoneId         Int?
 }
 
 enum TableStatus {
@@ -38,22 +48,29 @@ enum TableStatus {
   OPEN
 }
 
-
-
+/**
+ * =======================
+ * BUFFET PACKAGE
+ * =======================
+ */
 model BuffetPackage {
   id        Int    @id @default(autoincrement())
   name      String // เช่น 299 / 399
-  price     Float
+  price     Int
   timeLimit Int // นาที
 
   sessionPackages SessionPackage[]
 }
 
-
-
+/**
+ * =======================
+ * BUFFET SESSION
+ * =======================
+ */
 model BuffetSession {
   id     Int          @id @default(autoincrement())
   status BuffetStatus @default(ACTIVE)
+
   tableId Int
   table   Table @relation(fields: [tableId], references: [id])
 
@@ -65,7 +82,7 @@ model BuffetSession {
 
   packages SessionPackage[]
   orders   Order[]
-  bill     Bill?
+  slips    PaymentSlip[]
 }
 
 enum BuffetStatus {
@@ -73,7 +90,11 @@ enum BuffetStatus {
   FINISHED
 }
 
-
+/**
+ * =======================
+ * SESSION PACKAGE
+ * =======================
+ */
 model SessionPackage {
   id        Int @id @default(autoincrement())
   sessionId Int
@@ -84,6 +105,11 @@ model SessionPackage {
   package BuffetPackage @relation(fields: [packageId], references: [id])
 }
 
+/**
+ * =======================
+ * MENU / CATEGORY
+ * =======================
+ */
 model Category {
   id    Int     @id @default(autoincrement())
   name  String
@@ -95,7 +121,7 @@ model Category {
 model Menu {
   id         Int      @id @default(autoincrement())
   name       String
-  price      Float? // บุฟเฟต์อาจไม่ใช้
+  price      Int? // บุฟเฟต์อาจไม่ใช้
   image      String?
   categoryId Int
   createdAt  DateTime @default(now())
@@ -104,7 +130,11 @@ model Menu {
   items    OrderItem[]
 }
 
-
+/**
+ * =======================
+ * ORDER
+ * =======================
+ */
 model Order {
   id              Int         @id @default(autoincrement())
   buffetSessionId Int
@@ -125,27 +155,44 @@ model OrderItem {
   menu  Menu  @relation(fields: [menuId], references: [id])
 }
 
-
-
-model Bill {
-  id          Int         @id @default(autoincrement())
-  sessionId   Int         @unique
-  totalPrice  Int
-  paidAmount  Int
-  paymentType PaymentType
-  createdAt   DateTime    @default(now())
-
-  session BuffetSession @relation(fields: [sessionId], references: [id])
-}
-
-enum PaymentType {
-  CASH
-  QR
-  CARD
-}
-
 enum OrderStatus {
   PENDING
   COOKING
   DONE
+}
+
+model Zone {
+  id     Int        @id @default(autoincrement())
+  name   String // A, B, VIP
+  status ZoneStatus @default(OPEN)
+
+  tables Table[]
+}
+
+enum ZoneStatus {
+  OPEN
+  CLOSED // ปิดปรับปรุง
+}
+
+/**
+ * =======================
+ * PROMPTPAY SLIP
+ * =======================
+ */
+model PaymentSlip {
+  id              Int        @id @default(autoincrement())
+  buffetSessionId Int
+  amount          Int
+  imageUrl        String
+  status          SlipStatus @default(PENDING)
+  uploadedAt      DateTime   @default(now())
+  verifiedAt      DateTime?
+
+  session BuffetSession @relation(fields: [buffetSessionId], references: [id])
+}
+
+enum SlipStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

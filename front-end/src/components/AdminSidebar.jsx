@@ -29,6 +29,9 @@ export default function AdminSidebar() {
                 <NavLink to="/admin/packages" className={linkClass}>
                     🍽 จัดการแพ็กเกจ 
                 </NavLink>
+                <NavLink to="/admin/zones" className={linkClass}>
+                    🍽 จัดการ Zone 
+                </NavLink>
             </nav>
         </div>
     );

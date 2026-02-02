@@ -1,0 +1,14 @@
+-- AlterTable
+ALTER TABLE `table` ADD COLUMN `zoneId` INTEGER NULL;
+
+-- CreateTable
+CREATE TABLE `Zone` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(191) NOT NULL,
+    `status` ENUM('OPEN', 'CLOSED') NOT NULL DEFAULT 'OPEN',
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `Table` ADD CONSTRAINT `Table_zoneId_fkey` FOREIGN KEY (`zoneId`) REFERENCES `Zone`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

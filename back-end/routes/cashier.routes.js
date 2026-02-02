@@ -20,6 +20,12 @@ router.post(
     allowRoles("CASHIER"),
     openTable
 );
-router.post("/cashier/open-table", auth, allowRoles("CASHIER"), openTable);
-router.post("/cashier/close-table/:sessionId", auth, allowRoles("CASHIER"), closeTable);
+
+router.post(
+    "/cashier/close-table/:sessionId",
+    auth,
+    allowRoles("CASHIER"),
+    closeTable
+);
+
 export default router;
