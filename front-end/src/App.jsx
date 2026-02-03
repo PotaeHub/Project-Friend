@@ -19,11 +19,12 @@ import PromptPayPage from "./page/PromptPayPage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminZones from "./page/AdminZones";
+import SessionHistoryPage from "./page/SessionHistoryPage";
+import AdminSessionHistory from "./page/AdminSessionHistory";
 
 export default function App() {
   return (
     <Routes>
-
       {/* ===== Public ===== */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/menu" element={<CustomerPage />} />
@@ -31,10 +32,7 @@ export default function App() {
       <Route path="/customer/history" element={<HistoryPage />} />
 
       {/* ===== PAYMENT ===== */}
-      <Route
-        path="/payment/promptpay/:sessionId"
-        element={<PromptPayPage />}
-      />
+      <Route path="/payment/promptpay/:sessionId" element={<PromptPayPage />} />
 
       {/* ===== ADMIN ===== */}
       <Route
@@ -51,6 +49,7 @@ export default function App() {
         <Route path="tables" element={<AdminTables />} />
         <Route path="packages" element={<AdminPackages />} />
         <Route path="zones" element={<AdminZones />} />
+        <Route path="history" element={<AdminSessionHistory />} />
       </Route>
 
       {/* ===== KITCHEN ===== */}
