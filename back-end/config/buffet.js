@@ -1,0 +1,1 @@
+export const ORDER_LIMIT_PER_ROUND = 50;

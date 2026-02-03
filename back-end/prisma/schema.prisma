@@ -136,13 +136,13 @@ model Menu {
  * =======================
  */
 model Order {
-  id              Int         @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   buffetSessionId Int
-  status          OrderStatus @default(PENDING)
-  createdAt       DateTime    @default(now())
-
-  buffetSession BuffetSession @relation(fields: [buffetSessionId], references: [id])
-  items         OrderItem[]
+  status          OrderStatus   @default(PENDING)
+  createdAt       DateTime      @default(now())
+  round           Int?
+  buffetSession   BuffetSession @relation(fields: [buffetSessionId], references: [id])
+  items           OrderItem[]
 }
 
 model OrderItem {

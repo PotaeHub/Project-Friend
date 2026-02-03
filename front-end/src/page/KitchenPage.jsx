@@ -28,31 +28,55 @@ export default function KitchenPage() {
     useEffect(() => {
         socket.on("order:new", order => {
             const tableNumber = order.buffetSession.table.number;
-            setOrdersByTable(prev => ({
-                ...prev,
-                [tableNumber]: prev[tableNumber] ? [...prev[tableNumber], order] : [order]
-            }));
+
+            setOrdersByTable(prev => {
+                const existing = prev[tableNumber] || [];
+
+                // กัน order ซ้ำ
+                if (existing.some(o => o.id === order.id)) {
+                    return prev;
+                }
+
+                return {
+                    ...prev,
+                    [tableNumber]: [...existing, order]
+                };
+            });
         });
+
 
         socket.on("order:update", updated => {
             const tableNumber = updated.buffetSession.table.number;
+
             setOrdersByTable(prev => {
                 const tableOrders = prev[tableNumber] || [];
+
+                if (!tableOrders.some(o => o.id === updated.id)) {
+                    loadOrders();
+                    return prev;
+                }
+
                 if (updated.status === "DONE") {
                     const filtered = tableOrders.filter(o => o.id !== updated.id);
+
                     if (filtered.length === 0) {
                         const copy = { ...prev };
                         delete copy[tableNumber];
                         return copy;
                     }
+
                     return { ...prev, [tableNumber]: filtered };
                 }
+
                 return {
                     ...prev,
-                    [tableNumber]: tableOrders.map(o => o.id === updated.id ? updated : o)
+                    [tableNumber]: tableOrders.map(o =>
+                        o.id === updated.id ? updated : o
+                    )
                 };
             });
         });
+
 
         socket.on("table:done", tableNumber => {
             setOrdersByTable(prev => {

@@ -5,6 +5,8 @@ import {
   openTable,
   closeTable,
   getTableHistory,
+  getTableSummary,
+  getSessionSummary,
 } from "../controllers/cashier.controller.js";
 
 import { auth } from "../middleware/auth.js";
@@ -28,5 +30,17 @@ router.get(
   auth,
   allowRoles("CASHIER"),
   getTableHistory,
+);
+router.get(
+  "/cashier/tables/:tableId/summary",
+  auth,
+  allowRoles("CASHIER"),
+  getTableSummary,
+);
+router.get(
+  "/cashier/session-summary/:sessionId",
+  auth,
+  allowRoles("CASHIER"),
+  getSessionSummary,
 );
 export default router;

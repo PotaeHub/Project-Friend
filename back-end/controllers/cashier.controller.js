@@ -27,11 +27,11 @@ export const getTables = async (req, res) => {
       activeSessionId: session?.id || null,
       packages: session
         ? session.packages.map((p) => ({
-            id: p.package.id,
-            name: p.package.name,
-            price: p.package.price,
-            qty: p.qty,
-          }))
+          id: p.package.id,
+          name: p.package.name,
+          price: p.package.price,
+          qty: p.qty,
+        }))
         : [],
     };
   });
@@ -170,4 +170,84 @@ export const getTableHistory = async (req, res) => {
       message: "ไม่สามารถดึงประวัติการใช้งานได้",
     });
   }
+};
+export const getTableSummary = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+
+    const table = await prisma.table.findUnique({
+      where: { id: Number(tableId) },
+      include: {
+        buffetSession: {
+          where: { status: "ACTIVE" },
+          include: {
+            orders: {
+              orderBy: { round: "asc" },
+              include: {
+                items: {
+                  include: { menu: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!table || !table.buffetSession) {
+      return res.status(404).json({ message: "ไม่พบ session" });
+    }
+
+    res.json({
+      table: table.number,
+      orders: table.buffetSession.orders
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Load summary failed" });
+  }
+};
+// ดูสรุปการสั่งของ session ปัจจุบัน
+export const getSessionSummary = async (req, res) => {
+  const sessionId = Number(req.params.sessionId);
+
+  if (!sessionId) {
+    return res.status(400).json({ message: "sessionId ไม่ถูกต้อง" });
+  }
+
+  const session = await prisma.buffetSession.findUnique({
+    where: { id: sessionId },
+    include: {
+      table: true,
+      orders: {
+        include: {
+          items: {
+            include: {
+              menu: true,
+            },
+          },
+        },
+        orderBy: { round: "asc" },
+      },
+    },
+  });
+
+  if (!session) {
+    return res.status(404).json({ message: "ไม่พบ session" });
+  }
+
+  const orders = session.orders.map(o => ({
+    id: o.id,
+    round: o.round,
+    status: o.status,
+    items: o.items.map(i => ({
+      name: i.menu.name,
+      qty: i.qty,
+    })),
+  }));
+
+  res.json({
+    table: session.table.number,
+    orders,
+  });
 };

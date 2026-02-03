@@ -1,5 +1,5 @@
 import { prisma } from "../config/db.js";
-import { printOrder } from "../ulits/print.js";
+import { ORDER_LIMIT_PER_ROUND } from "../config/buffet.js";
 import { emitDashboard } from "./emitDashboard.js";
 
 export const getOrders = async (req, res) => {
@@ -37,7 +37,6 @@ export const getOrdersByTable = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 export const createOrder = async (req, res) => {
   try {
     const io = req.app.get("io");
@@ -47,19 +46,53 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid data" });
     }
 
+    /* =========================
+      1. Load session + last order
+    ========================== */
     const session = await prisma.buffetSession.findUnique({
       where: { id: Number(buffetSessionId) },
-      include: { table: true },
+      include: {
+        orders: {
+          where: { status: { not: "DONE" } },
+          orderBy: { round: "desc" },
+          take: 1,
+        },
+      },
     });
 
     if (!session || session.status !== "ACTIVE") {
       return res.status(400).json({ message: "Session not active" });
     }
 
+    const lastOrder = session.orders[0] || null;
+
+    /* =========================
+      2. Calculate qty
+    ========================== */
+    const totalQty = items.reduce(
+      (sum, i) => sum + Number(i.qty || 0),
+      0
+    );
+
+    if (totalQty > ORDER_LIMIT_PER_ROUND) {
+      return res.status(400).json({
+        message: `สั่งได้ไม่เกิน ${ORDER_LIMIT_PER_ROUND} รายการต่อรอบ`,
+      });
+    }
+
+    /* =========================
+      3. Next round
+    ========================== */
+    const nextRound = lastOrder ? lastOrder.round + 1 : 1;
+
+    /* =========================
+      4. Create order
+    ========================== */
     const order = await prisma.order.create({
       data: {
         buffetSessionId: session.id,
-        status: "COOKING",
+        round: nextRound,
+        status: "PENDING",
         items: {
           create: items.map((i) => ({
             menuId: Number(i.menuId),
@@ -69,13 +102,13 @@ export const createOrder = async (req, res) => {
       },
       include: {
         items: { include: { menu: true } },
-        buffetSession: {
-          include: { table: true },
-        },
+        buffetSession: { include: { table: true } },
       },
     });
 
-    // 🔥 REALTIME
+    /* =========================
+      5. Realtime
+    ========================== */
     io.to("kitchen").emit("order:new", order);
     io.to("admin").emit("order:new", order);
     io.to(`session-${session.id}`).emit("order:new", order);
